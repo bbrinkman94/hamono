@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #05080a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+    canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  </style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = 512;
+canvas.height = 480;
+
+const TILE = 32;
+const COLS = canvas.width / TILE;   // 16
+const ROWS = canvas.height / TILE;  // 15
+
+// ── PALETTE ──────────────────────────────────────────────────
+const C = {
+  grass:       '#2d4a1e',
+  grassDark:   '#1e3214',
+  grassLight:  '#3a6128',
+  path:        '#8a7a5a',
+  pathDark:    '#6a5e44',
+  water:       '#1a3a6a',
+  waterLight:  '#2a4e8a',
+  tree:        '#1a3010',
+  treeTop:     '#2d5020',
+  building:    '#4a3020',
+  buildingRoof:'#6a2010',
+  forge:       '#3a2010',
+  forgeGlow:   '#ff6a00',
+  uiBorder:    '#8a6a30',
+  text:        '#e8d8a0',
+  textDim:     '#806848',
+  player:      '#e8c870',
+  playerDark:  '#b89848',
+  playerOut:   '#2a1a08',
+};
+
+// ── MAP ──────────────────────────────────────────────────────
+// 0=grass 1=tree 2=path 3=water 4=building 5=forge
+const mapData = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,2,0,0,0,0,0,0,0,0,1],
+  [1,0,4,4,0,0,2,0,0,4,4,4,0,0,0,1],
+  [1,0,4,4,0,0,2,0,0,4,4,4,0,0,0,1],
+  [1,0,0,0,0,0,2,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,2,2,2,2,2,0,0,0,0,1],
+  [1,0,0,5,5,0,0,0,0,0,2,0,3,3,0,1],
+  [1,0,0,5,5,0,0,0,0,0,2,0,3,3,0,1],
+  [1,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,2,0,4,4,0,1],
+  [1,0,0,0,1,1,0,0,0,0,2,0,4,4,0,1],
+  [1,0,0,0,1,1,0,0,0,0,2,0,0,0,0,1],
+  [1,0,2,2,2,2,2,2,2,2,2,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
+
+function isSolid(tx, ty) {
+  if (tx < 0 || ty < 0 || tx >= COLS || ty >= ROWS) return true;
+  const t = mapData[ty][tx];
+  return t === 1 || t === 4 || t === 5;
+}
+
+// ── PLAYER ───────────────────────────────────────────────────
+const player = {
+  tx: 6, ty: 8,
+  x: 6 * TILE, y: 8 * TILE,
+  facing: 0,   // 0=down 1=up 2=left 3=right
+  moving: false,
+  targetX: 6 * TILE,
+  targetY: 8 * TILE,
+  moveSpeed: 160,
+  walkTimer: 0,
+};
+
+// ── INPUT ─────────────────────────────────────────────────────
+const keys = {};
+window.addEventListener('keydown', e => { keys[e.code] = true; e.preventDefault(); });
+window.addEventListener('keyup',   e => { keys[e.code] = false; });
+
+// ── STATE ─────────────────────────────────────────────────────
+let gameState = 'title';
+let time = 0;
+
+// ── TILE RENDERING ────────────────────────────────────────────
+function drawTile(tx, ty) {
+  const x = tx * TILE, y = ty * TILE, s = TILE;
+  const t = mapData[ty][tx];
+
+  if (t === 0) {
+    ctx.fillStyle = C.grass;
+    ctx.fillRect(x, y, s, s);
+    if ((tx + ty) % 3 === 0) { ctx.fillStyle = C.grassDark; ctx.fillRect(x+2, y+2, 4, 4); }
+    if ((tx*3 + ty) % 5 === 0) { ctx.fillStyle = C.grassLight; ctx.fillRect(x+10, y+6, 3, 3); }
+    if ((tx + ty*2) % 7 === 0) { ctx.fillStyle = C.grassDark; ctx.fillRect(x+18, y+14, 2, 2); }
+  } else if (t === 1) {
+    ctx.fillStyle = C.tree;
+    ctx.fillRect(x, y, s, s);
+    ctx.fillStyle = C.treeTop;
+    ctx.fillRect(x+4, y+2, s-8, s-8);
+    ctx.fillRect(x+2, y+6, s-4, s-14);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(x+s-6, y+s-6, 6, 6);
+  } else if (t === 2) {
+    ctx.fillStyle = C.pathDark;
+    ctx.fillRect(x, y, s, s);
+    ctx.fillStyle = C.path;
+    ctx.fillRect(x+1, y+1, s-2, s-2);
+    if ((tx + ty*2) % 4 === 0) { ctx.fillStyle = C.pathDark; ctx.fillRect(x+6, y+8, 6, 4); }
+    if ((tx*2 + ty) % 5 === 0) { ctx.fillStyle = C.pathDark; ctx.fillRect(x+18, y+18, 5, 3); }
+  } else if (t === 3) {
+    const wave = Math.sin(time * 2 + tx * 0.8 + ty * 0.5) * 2;
+    ctx.fillStyle = C.water;
+    ctx.fillRect(x, y, s, s);
+    ctx.fillStyle = C.waterLight;
+    ctx.fillRect(x+2, y+4+wave, s-4, 3);
+    ctx.fillRect(x+6, y+14+wave*0.5, s-10, 2);
+    ctx.fillRect(x+4, y+22-wave, s-12, 2);
+  } else if (t === 4) {
+    ctx.fillStyle = C.building;
+    ctx.fillRect(x, y, s, s);
+    ctx.fillStyle = C.buildingRoof;
+    ctx.fillRect(x, y, s, 10);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(x+s-4, y+4, 4, s-4);
+    ctx.fillStyle = '#ffcc44';
+    ctx.fillRect(x+8, y+14, 7, 7);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(x+9, y+15, 2, 2);
+    ctx.fillRect(x+13, y+15, 2, 2);
+  } else if (t === 5) {
+    ctx.fillStyle = C.forge;
+    ctx.fillRect(x, y, s, s);
+    const glow = 0.5 + 0.2 * Math.sin(time * 4 + tx);
+    ctx.fillStyle = `rgba(255,80,0,${glow})`;
+    ctx.fillRect(x+6, y+6, s-12, s-10);
+    ctx.fillStyle = C.forgeGlow;
+    ctx.fillRect(x+10, y+10, s-20, s-18);
+    // sparks
+    if (Math.random() < 0.05) {
+      ctx.fillStyle = '#ffee00';
+      ctx.fillRect(x + 8 + Math.floor(Math.random()*16), y + 2, 2, 2);
+    }
+    // chimney
+    ctx.fillStyle = `rgba(60,60,60,${0.4 + 0.15*Math.sin(time*3)})`;
+    ctx.fillRect(x+12, y-6, 5, 8);
+  }
+}
+
+function drawMap() {
+  for (let ty = 0; ty < ROWS; ty++)
+    for (let tx = 0; tx < COLS; tx++)
+      drawTile(tx, ty);
+}
+
+// ── PLAYER SPRITE ─────────────────────────────────────────────
+function drawPlayer() {
+  const cx = player.x + TILE/2;
+  const cy = player.y + TILE/2;
+  const bob = player.moving ? Math.sin(player.walkTimer * 14) * 1.5 : 0;
+  const legSwing = player.moving ? Math.sin(player.walkTimer * 14) : 0;
+
+  ctx.save();
+  ctx.translate(cx, cy + bob);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, 11, 7, 3, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Legs
+  ctx.fillStyle = C.playerOut;
+  if (player.facing !== 1) {
+    ctx.fillRect(-4 + legSwing*2, 6, 4, 8);
+    ctx.fillRect(1 - legSwing*2, 6, 4, 8);
+  } else {
+    ctx.fillRect(-4 - legSwing*2, 6, 4, 8);
+    ctx.fillRect(1 + legSwing*2, 6, 4, 8);
+  }
+
+  // Body / kimono
+  ctx.fillStyle = C.playerDark;
+  ctx.fillRect(-7, -4, 14, 12);
+  ctx.fillStyle = C.player;
+  ctx.fillRect(-6, -3, 12, 10);
+
+  // Kimono detail
+  ctx.fillStyle = C.playerDark;
+  ctx.fillRect(-1, -3, 2, 10);
+
+  // Belt / obi
+  ctx.fillStyle = '#8a3010';
+  ctx.fillRect(-7, 2, 14, 4);
+
+  // Knife on belt
+  ctx.fillStyle = '#9090bb';
+  ctx.fillRect(6, 1, 2, 9);
+  ctx.fillStyle = '#7a5028';
+  ctx.fillRect(6, 5, 2, 5);
+
+  // Arms
+  ctx.fillStyle = C.player;
+  ctx.fillRect(-9, -3, 3, 8);
+  ctx.fillRect(7, -3, 3, 8);
+
+  // Head
+  ctx.fillStyle = C.player;
+  ctx.fillRect(-5, -16, 10, 13);
+  ctx.fillStyle = C.playerOut;
+  ctx.fillRect(-5, -17, 10, 3); // hair
+  ctx.fillRect(-6, -16, 2, 12);
+
+  // Face by direction
+  ctx.fillStyle = C.playerOut;
+  if (player.facing === 0) {       // down
+    ctx.fillRect(-2, -10, 2, 2);
+    ctx.fillRect(2,  -10, 2, 2);
+    ctx.fillRect(-1, -6,  4, 1);
+  } else if (player.facing === 2) { // left
+    ctx.fillRect(-4, -10, 2, 2);
+    ctx.fillRect(-2, -6,  3, 1);
+  } else if (player.facing === 3) { // right
+    ctx.fillRect(3,  -10, 2, 2);
+    ctx.fillRect(0,  -6,  3, 1);
+  }
+  // facing up = back of head, no face
+
+  ctx.restore();
+}
+
+// ── PLAYER UPDATE ─────────────────────────────────────────────
+function updatePlayer(dt) {
+  if (player.moving) {
+    const dx = player.targetX - player.x;
+    const dy = player.targetY - player.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const step = player.moveSpeed * dt;
+
+    if (dist <= step) {
+      player.x = player.targetX;
+      player.y = player.targetY;
+      player.moving = false;
+    } else {
+      player.x += (dx / dist) * step;
+      player.y += (dy / dist) * step;
+    }
+    player.walkTimer += dt;
+  } else {
+    let nx = player.tx, ny = player.ty;
+
+    if      (keys['ArrowUp']    || keys['KeyW']) { ny--; player.facing = 1; }
+    else if (keys['ArrowDown']  || keys['KeyS']) { ny++; player.facing = 0; }
+    else if (keys['ArrowLeft']  || keys['KeyA']) { nx--; player.facing = 2; }
+    else if (keys['ArrowRight'] || keys['KeyD']) { nx++; player.facing = 3; }
+    else return;
+
+    if (!isSolid(nx, ny)) {
+      player.tx = nx;
+      player.ty = ny;
+      player.targetX = nx * TILE;
+      player.targetY = ny * TILE;
+      player.moving = true;
+    }
+  }
+}
+
+// ── HUD ───────────────────────────────────────────────────────
+function drawHUD() {
+  const bw = 240, bh = 38;
+  const bx = canvas.width/2 - bw/2;
+  const by = canvas.height - bh - 8;
+
+  ctx.fillStyle = 'rgba(15,10,4,0.88)';
+  ctx.fillRect(bx, by, bw, bh);
+  ctx.strokeStyle = C.uiBorder;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx, by, bw, bh);
+  // inner line
+  ctx.strokeStyle = 'rgba(255,180,60,0.15)';
+  ctx.strokeRect(bx+2, by+2, bw-4, bh-4);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = C.uiBorder;
+  ctx.font = 'bold 10px monospace';
+  ctx.fillText('◆  SAKAI DISTRICT  ◆', canvas.width/2, by + 15);
+  ctx.fillStyle = C.textDim;
+  ctx.font = '9px monospace';
+  ctx.fillText('Walk into grass to encounter knives', canvas.width/2, by + 29);
+}
+
+// ── TITLE ─────────────────────────────────────────────────────
+function drawTitle() {
+  ctx.fillStyle = 'rgba(4,6,4,0.94)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Forge glow
+  const g = 0.18 + 0.08 * Math.sin(time * 1.8);
+  const grad = ctx.createRadialGradient(canvas.width/2, canvas.height*0.55, 10, canvas.width/2, canvas.height*0.55, 220);
+  grad.addColorStop(0, `rgba(255,90,0,${g})`);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const cy = canvas.height / 2;
+  ctx.textAlign = 'center';
+
+  // Decorative lines
+  ctx.strokeStyle = C.uiBorder;
+  ctx.lineWidth = 1;
+  [[80, cy - 50], [80, cy + 46]].forEach(([lx, ly]) => {
+    ctx.beginPath();
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(canvas.width - lx, ly);
+    ctx.stroke();
+  });
+
+  // Corner marks
+  [[82, cy-50], [canvas.width-82, cy-50], [82, cy+46], [canvas.width-82, cy+46]].forEach(([x,y]) => {
+    ctx.fillStyle = C.uiBorder;
+    ctx.fillRect(x-3, y-3, 6, 6);
+  });
+
+  // Title glow
+  ctx.shadowColor = C.forgeGlow;
+  ctx.shadowBlur = 24 + 8 * Math.sin(time * 1.8);
+  ctx.fillStyle = C.text;
+  ctx.font = 'bold 56px monospace';
+  ctx.fillText('HAMONO', canvas.width/2, cy + 8);
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = C.uiBorder;
+  ctx.font = '12px monospace';
+  ctx.fillText('刃物  ·  THE BLADE COLLECTOR', canvas.width/2, cy + 30);
+
+  // Subtitle
+  ctx.fillStyle = C.textDim;
+  ctx.font = '10px monospace';
+  ctx.fillText('Collect legendary Japanese knives. Master the forge.', canvas.width/2, cy + 68);
+
+  // Blink
+  if (Math.floor(time * 2) % 2 === 0) {
+    ctx.fillStyle = C.text;
+    ctx.font = '11px monospace';
+    ctx.fillText('▶  PRESS ANY KEY TO BEGIN  ◀', canvas.width/2, cy + 100);
+  }
+
+  ctx.fillStyle = C.textDim;
+  ctx.font = '8px monospace';
+  ctx.fillText('v0.1 prototype  ·  WASD / Arrow Keys to move', canvas.width/2, canvas.height - 12);
+}
+
+// ── GAME LOOP ─────────────────────────────────────────────────
+let lastTime = 0;
+
+function loop(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+  time += dt;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (gameState === 'title') {
+    drawMap();
+    drawTitle();
+    if (Object.values(keys).some(Boolean)) gameState = 'playing';
+  } else {
+    updatePlayer(dt);
+    drawMap();
+    drawPlayer();
+    drawHUD();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
