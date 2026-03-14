@@ -136,31 +136,51 @@ function stopEncounterDrone() {
 
 // ── COLORS ────────────────────────────────────────────────────
 const C = {
-  bg: '#0a0a0f',
-  grass: '#2d4a2d',
-  grassLight: '#3a5c3a',
-  path: '#8a7a60',
-  pathLight: '#9d8d72',
-  water: '#1a3a5a',
-  waterLight: '#2a4a6a',
-  building: '#3a2a2a',
-  buildingLight: '#4a3a3a',
-  roof: '#6a2828',
-  forge: '#4a3020',
+  bg: '#101808',
+  // Grass
+  grass: '#78c050',
+  grassLight: '#88c858',
+  // Tall grass
+  tallGrass: '#58a030',
+  tallGrassLight: '#68b038',
+  tallGrassBlade: '#386820',
+  tallGrassTip: '#50902a',
+  // Path
+  path: '#d8b870',
+  pathLight: '#c8a860',
+  pathShadow: '#b09850',
+  // Water
+  water: '#2050d0',
+  waterLight: '#3870e8',
+  waterFoam: '#90b8f8',
+  // Tree
+  tree: '#386828',
+  treeLight: '#50882a',
+  treeShadow: '#284818',
+  treeTrunk: '#886030',
+  treeTrunkShadow: '#705020',
+  // Buildings
+  building: '#f0e0b0',
+  buildingDark: '#c8b880',
+  buildingLine: '#807040',
+  roof: '#c82010',
+  roofLight: '#e83020',
+  roofShadow: '#a01808',
+  // Forge
+  forge: '#403020',
   forgeFire: '#ff6622',
-  forgeGlow: '#ff8844',
-  bamboo: '#1a3a1a',
-  bambooLight: '#2a5a2a',
-  bambooStalk: '#4a7a3a',
-  text: '#e0d8c8',
-  textDim: '#806858',
-  uiBorder: '#c8a050',
-  uiGlow: 'rgba(200,160,80,0.4)',
-  rarityCommon: '#b0b0b0',
-  rarityUncommon: '#60b060',
-  rarityRare: '#6080e0',
-  rarityLegendary: '#c8a050',
-  rarityMythic: '#d060d0',
+  forgeGlow: '#ff9944',
+  // UI
+  text: '#f8f8f0',
+  textDim: '#888070',
+  uiBorder: '#d8a030',
+  uiGlow: 'rgba(216,160,48,0.4)',
+  // Rarities
+  rarityCommon: '#c0c0b8',
+  rarityUncommon: '#60c060',
+  rarityRare: '#6090e8',
+  rarityLegendary: '#d0a030',
+  rarityMythic: '#e060e0',
 };
 
 // ── KNIFE DATABASE ────────────────────────────────────────────
@@ -302,34 +322,34 @@ function justPressed(code) { return keyJustPressed[code]; }
 function clearFrameInputs() { keyJustPressed = {}; }
 
 // ── MAP ───────────────────────────────────────────────────────
-// Tiles: 0=grass, 1=path, 2=water, 3=building, 4=forge, 5=bamboo(encounter), 6=bridge, 7=roof(impassable), 8=deep water
+// Tiles: 0=grass, 1=path, 2=water, 3=building, 4=forge, 5=tall grass(encounter), 6=bridge, 7=roof(impassable), 9=tree(impassable)
 const MAP_W = 25, MAP_H = 19;
 const map = [
-  [2,2,2,8,8,8,8,8,2,2,2,2,2,2,2,8,8,8,8,8,2,2,2,2,2],
-  [2,0,0,0,0,5,5,0,0,0,1,1,1,0,0,0,5,5,5,0,0,0,0,0,2],
-  [2,0,5,5,0,5,5,5,0,0,1,3,1,0,0,5,5,5,5,5,0,0,5,0,2],
-  [2,0,5,5,5,0,0,5,0,0,1,1,1,0,0,5,5,0,5,5,0,5,5,0,2],
-  [2,0,0,5,0,0,0,0,0,1,1,0,1,1,0,0,0,0,0,5,0,5,0,0,2],
-  [2,0,0,0,0,0,3,7,3,1,0,0,0,1,3,7,3,0,0,0,0,0,0,0,2],
-  [2,0,0,0,0,0,3,7,3,1,0,0,0,1,3,7,3,0,0,0,0,0,5,0,2],
-  [2,5,5,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,0,0,5,5,0,2],
-  [2,5,5,0,0,1,1,1,0,0,0,0,0,0,0,1,1,1,0,0,5,5,5,0,2],
-  [2,0,0,0,1,1,0,0,0,0,4,4,4,0,0,0,0,1,1,0,0,5,0,0,2],
-  [2,0,0,0,1,0,0,0,0,0,4,4,4,0,0,0,0,0,1,0,0,0,0,0,2],
-  [2,0,5,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,2],
-  [2,0,5,5,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0,5,0,2],
-  [2,0,0,5,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,5,5,0,2],
-  [2,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,5,5,0,0,2],
-  [2,0,5,5,0,0,0,0,1,0,0,3,0,0,1,0,0,0,5,5,5,0,0,0,2],
-  [2,0,5,5,5,0,0,1,1,0,3,7,3,0,1,1,0,0,5,5,0,0,5,0,2],
-  [2,0,0,5,0,0,0,0,0,0,3,7,3,0,0,0,0,0,0,0,0,5,5,0,2],
-  [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+  [9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9],
+  [9,0,0,0,9,5,5,0,0,0,1,1,1,1,0,0,5,5,5,0,9,0,0,0,9],
+  [9,0,5,5,0,5,5,5,0,0,1,3,1,0,0,5,5,5,5,5,0,0,5,0,9],
+  [9,0,5,9,5,0,0,5,0,0,1,7,1,0,0,5,5,0,5,5,0,5,5,0,9],
+  [9,0,0,5,0,0,0,0,0,1,1,0,1,1,0,0,0,0,0,5,0,5,0,0,9],
+  [9,0,0,0,0,0,3,7,3,1,0,0,0,1,3,7,3,0,0,0,0,0,0,0,9],
+  [9,0,0,0,0,0,3,7,3,1,0,0,0,1,3,7,3,0,0,0,0,0,5,0,9],
+  [9,5,5,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,0,0,5,5,0,9],
+  [9,5,5,0,0,1,1,1,0,0,2,2,2,0,0,1,1,1,0,0,5,5,5,0,9],
+  [9,0,0,0,1,1,0,0,0,0,4,4,4,0,0,0,0,1,1,0,0,5,0,0,9],
+  [9,0,0,0,1,0,0,0,0,0,4,4,4,0,0,0,0,0,1,0,0,0,0,0,9],
+  [9,0,5,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,9],
+  [9,0,5,5,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0,5,0,9],
+  [9,0,0,5,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,5,5,0,9],
+  [9,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,5,5,0,0,9],
+  [9,0,5,5,0,0,0,0,1,0,0,3,0,0,1,0,0,0,5,5,5,0,0,0,9],
+  [9,0,5,5,5,0,0,1,1,0,3,7,3,0,1,1,0,0,5,5,0,0,5,0,9],
+  [9,0,0,5,0,0,0,0,0,0,3,7,3,0,0,0,0,0,0,0,0,5,5,0,9],
+  [9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9],
 ];
 
 function isPassable(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return false;
   const t = map[ty][tx];
-  return t !== 2 && t !== 7 && t !== 8;
+  return t !== 2 && t !== 7 && t !== 9;
 }
 
 function isEncounterTile(tx, ty) {
@@ -631,167 +651,313 @@ function updateCollection(dt) {
 
 // ── DRAW: MAP ─────────────────────────────────────────────────
 function drawMap() {
-  const camX = player.px - canvas.width / 2 + TILE / 2;
-  const camY = player.py - canvas.height / 2 + TILE / 2;
+  let camX = player.px - canvas.width / 2 + TILE / 2;
+  let camY = player.py - canvas.height / 2 + TILE / 2;
+  // Clamp camera so map always fills the screen
+  camX = Math.max(0, Math.min(MAP_W * TILE - canvas.width, camX));
+  camY = Math.max(0, Math.min(MAP_H * TILE - canvas.height, camY));
 
-  // Background gradient
-  const bgGrad = ctx.createRadialGradient(400, 300, 0, 400, 300, 500);
-  bgGrad.addColorStop(0, '#12121a');
-  bgGrad.addColorStop(1, '#08080c');
-  ctx.fillStyle = bgGrad;
+  // Dark tree-green fill for any gap at edges
+  ctx.fillStyle = C.bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // ── Pass 1: draw ground tiles ──
   for (let ty = 0; ty < MAP_H; ty++) {
     for (let tx = 0; tx < MAP_W; tx++) {
-      const sx = tx * TILE - camX;
-      const sy = ty * TILE - camY;
+      const sx = Math.round(tx * TILE - camX);
+      const sy = Math.round(ty * TILE - camY);
       if (sx < -TILE || sy < -TILE || sx > canvas.width + TILE || sy > canvas.height + TILE) continue;
 
       const tile = map[ty][tx];
+      const seed = tx * 31 + ty * 17;
+
       switch (tile) {
-        case 0: // Grass
+        case 9: // Tree — draw grass base first
+        case 0: { // Grass
           ctx.fillStyle = (tx + ty) % 2 === 0 ? C.grass : C.grassLight;
           ctx.fillRect(sx, sy, TILE, TILE);
-          // Grass detail
-          if ((tx * 7 + ty * 13) % 5 === 0) {
-            ctx.fillStyle = '#3a6a3a';
-            ctx.fillRect(sx + 8, sy + 12, 2, 6);
-            ctx.fillRect(sx + 20, sy + 8, 2, 8);
+          // Occasional flower dot
+          if (seed % 11 === 0) {
+            ctx.fillStyle = '#f8f040';
+            ctx.fillRect(sx + (seed % 18) + 4, sy + (seed % 16) + 4, 2, 2);
+          }
+          // Subtle blade detail
+          if (seed % 7 === 0) {
+            ctx.fillStyle = '#609838';
+            ctx.fillRect(sx + (seed % 20) + 2, sy + 10, 1, 6);
+            ctx.fillRect(sx + (seed % 16) + 12, sy + 8, 1, 7);
           }
           break;
-        case 1: // Path
+        }
+        case 1: { // Dirt path — GBA sandy style
           ctx.fillStyle = (tx + ty) % 2 === 0 ? C.path : C.pathLight;
           ctx.fillRect(sx, sy, TILE, TILE);
-          if ((tx * 11 + ty * 7) % 8 === 0) {
-            ctx.fillStyle = '#7a6a50';
-            ctx.fillRect(sx + 5 + (tx % 3) * 8, sy + 4 + (ty % 3) * 7, 3, 2);
+          // Pebble detail
+          if (seed % 9 === 0) {
+            ctx.fillStyle = C.pathShadow;
+            ctx.fillRect(sx + (seed % 22) + 2, sy + (seed % 20) + 2, 3, 2);
+          }
+          // Subtle edge shading to suggest depth vs. grass
+          ctx.fillStyle = 'rgba(0,0,0,0.06)';
+          ctx.fillRect(sx, sy, TILE, 1);
+          ctx.fillRect(sx, sy, 1, TILE);
+          break;
+        }
+        case 2: { // Water — GBA Pokemon-style
+          const wA = Math.sin(time * 2.5 + tx * 0.9 + ty * 0.5);
+          ctx.fillStyle = C.water;
+          ctx.fillRect(sx, sy, TILE, TILE);
+          // Animated wave highlights
+          ctx.fillStyle = C.waterLight;
+          const wOff = Math.round(wA * 2);
+          ctx.fillRect(sx, sy + 7 + wOff, TILE, 3);
+          ctx.fillRect(sx, sy + 21 - wOff, TILE, 2);
+          // Foam sparkle
+          if (wA > 0.65) {
+            ctx.fillStyle = C.waterFoam;
+            ctx.fillRect(sx + (seed % 22) + 2, sy + (seed % 20) + 2, 3, 1);
           }
           break;
-        case 2: case 8: // Water
-          ctx.fillStyle = tile === 8 ? '#0a2a4a' : ((tx + ty + Math.floor(time * 2)) % 2 === 0 ? C.water : C.waterLight);
+        }
+        case 3: { // Building wall — cream/beige GBA style
+          ctx.fillStyle = C.building;
           ctx.fillRect(sx, sy, TILE, TILE);
-          // Wave shimmer
-          const waveOff = Math.sin(time * 3 + tx * 0.5 + ty * 0.7) * 2;
-          ctx.fillStyle = 'rgba(100,180,255,0.1)';
-          ctx.fillRect(sx, sy + 14 + waveOff, TILE, 2);
-          break;
-        case 3: // Building wall
-          ctx.fillStyle = (tx + ty) % 2 === 0 ? C.building : C.buildingLight;
-          ctx.fillRect(sx, sy, TILE, TILE);
-          ctx.strokeStyle = '#2a1a1a';
+          // Horizontal plank lines
+          ctx.fillStyle = C.buildingDark;
+          for (let i = 1; i < 4; i++) ctx.fillRect(sx, sy + i * 8, TILE, 1);
+          // Outline
+          ctx.fillStyle = C.buildingLine;
+          ctx.strokeStyle = C.buildingLine;
+          ctx.lineWidth = 1;
           ctx.strokeRect(sx + 0.5, sy + 0.5, TILE - 1, TILE - 1);
           break;
-        case 7: // Roof
+        }
+        case 7: { // Roof — red tiled
           ctx.fillStyle = C.roof;
           ctx.fillRect(sx, sy, TILE, TILE);
-          ctx.fillStyle = '#5a1818';
-          ctx.fillRect(sx, sy + TILE - 4, TILE, 4);
+          // Tile row shadows
+          ctx.fillStyle = C.roofShadow;
+          for (let i = 0; i < 4; i++) ctx.fillRect(sx, sy + i * 8, TILE, 4);
+          // Tile row highlights
+          ctx.fillStyle = C.roofLight;
+          for (let i = 0; i < 4; i++) ctx.fillRect(sx, sy + i * 8, TILE, 1);
           break;
-        case 4: // Forge
+        }
+        case 4: { // Forge — stone hearth
           ctx.fillStyle = C.forge;
           ctx.fillRect(sx, sy, TILE, TILE);
-          // Animated embers
-          if (Math.random() > 0.85) {
+          // Stone texture
+          ctx.fillStyle = '#503828';
+          ctx.fillRect(sx + 2, sy + 2, 12, 12);
+          ctx.fillRect(sx + 16, sy + 8, 12, 14);
+          ctx.fillStyle = '#604030';
+          ctx.fillRect(sx + 4, sy + 4, 8, 8);
+          // Embers
+          if (Math.random() > 0.82) {
             spawnParticle(
-              sx + 16 + (Math.random() - 0.5) * 20,
-              sy + 10,
-              (Math.random() - 0.5) * 15,
-              -20 - Math.random() * 20,
+              sx + 16 + (Math.random() - 0.5) * 18,
+              sy + 12,
+              (Math.random() - 0.5) * 18,
+              -25 - Math.random() * 25,
               Math.random() > 0.5 ? C.forgeFire : C.forgeGlow,
-              0.5 + Math.random() * 0.5,
+              0.4 + Math.random() * 0.4,
               2
             );
           }
-          // Glow
-          const glowSize = 8 + Math.sin(time * 4) * 3;
-          const grd = ctx.createRadialGradient(sx + 16, sy + 16, 0, sx + 16, sy + 16, TILE + glowSize);
-          grd.addColorStop(0, 'rgba(255,102,34,0.15)');
+          // Orange glow
+          const glowPulse = 0.12 + Math.sin(time * 4) * 0.04;
+          const grd = ctx.createRadialGradient(sx + 16, sy + 16, 0, sx + 16, sy + 16, TILE + 10);
+          grd.addColorStop(0, `rgba(255,102,34,${glowPulse})`);
           grd.addColorStop(1, 'rgba(255,102,34,0)');
           ctx.fillStyle = grd;
-          ctx.fillRect(sx - glowSize, sy - glowSize, TILE + glowSize * 2, TILE + glowSize * 2);
+          ctx.fillRect(sx - 8, sy - 8, TILE + 16, TILE + 16);
           break;
-        case 5: // Bamboo / encounter grass
-          ctx.fillStyle = (tx + ty) % 2 === 0 ? C.bamboo : C.bambooLight;
+        }
+        case 5: { // Tall grass — Pokemon Emerald encounter style
+          // Base — slightly darker green than normal grass
+          ctx.fillStyle = (tx + ty) % 2 === 0 ? C.tallGrass : C.tallGrassLight;
           ctx.fillRect(sx, sy, TILE, TILE);
-          // Bamboo stalks
-          const seed = tx * 31 + ty * 17;
-          for (let i = 0; i < 3; i++) {
-            const bx = sx + 6 + ((seed + i * 11) % 20);
-            const sway = Math.sin(time * 1.5 + tx + i) * 1.5;
-            ctx.fillStyle = C.bambooStalk;
-            ctx.fillRect(bx + sway, sy, 2, TILE);
-            // Leaves
-            ctx.fillStyle = '#5a9a4a';
-            ctx.fillRect(bx + sway - 2, sy + 4 + (i * 8) % 16, 6, 2);
-            ctx.fillRect(bx + sway + 1, sy + 10 + (i * 5) % 12, 5, 2);
-          }
-          // Subtle danger indicator — rustling effect
-          if (Math.sin(time * 5 + tx * 3 + ty * 7) > 0.8) {
-            ctx.fillStyle = 'rgba(100,200,80,0.08)';
-            ctx.fillRect(sx, sy, TILE, TILE);
-          }
+          // Grass blades — tall, sticking up from top half
+          const blade = (off) => Math.round(Math.sin(time * 1.8 + tx * 0.7 + off) * 1.5);
+          // Left blade
+          ctx.fillStyle = C.tallGrassBlade;
+          ctx.fillRect(sx + (seed % 6) + 3  + blade(0), sy, 2, 18);
+          ctx.fillRect(sx + (seed % 8) + 12 + blade(1), sy + 2, 2, 16);
+          ctx.fillRect(sx + (seed % 6) + 20 + blade(2), sy + 1, 2, 17);
+          // Lighter tips
+          ctx.fillStyle = C.tallGrassTip;
+          ctx.fillRect(sx + (seed % 6) + 3  + blade(0), sy, 2, 6);
+          ctx.fillRect(sx + (seed % 8) + 12 + blade(1), sy + 2, 2, 5);
+          ctx.fillRect(sx + (seed % 6) + 20 + blade(2), sy + 1, 2, 6);
           break;
+        }
       }
+    }
+  }
+
+  // ── Pass 2: draw tree canopies on top ──
+  for (let ty = 0; ty < MAP_H; ty++) {
+    for (let tx = 0; tx < MAP_W; tx++) {
+      if (map[ty][tx] !== 9) continue;
+      const sx = Math.round(tx * TILE - camX);
+      const sy = Math.round(ty * TILE - camY);
+      if (sx < -TILE || sy < -TILE || sx > canvas.width + TILE || sy > canvas.height + TILE) continue;
+
+      // Ground shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath();
+      ctx.ellipse(sx + 17, sy + 27, 12, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Trunk
+      ctx.fillStyle = C.treeTrunk;
+      ctx.fillRect(sx + 12, sy + 18, 8, 11);
+      ctx.fillStyle = C.treeTrunkShadow;
+      ctx.fillRect(sx + 13, sy + 19, 3, 10);
+      // Canopy — shadow ring
+      ctx.fillStyle = C.treeShadow;
+      ctx.beginPath();
+      ctx.arc(sx + 16, sy + 13, 14, 0, Math.PI * 2);
+      ctx.fill();
+      // Canopy — main
+      ctx.fillStyle = C.tree;
+      ctx.beginPath();
+      ctx.arc(sx + 16, sy + 13, 12, 0, Math.PI * 2);
+      ctx.fill();
+      // Canopy — highlight
+      ctx.fillStyle = C.treeLight;
+      ctx.beginPath();
+      ctx.arc(sx + 13, sy + 10, 7, 0, Math.PI * 2);
+      ctx.fill();
+      // Canopy — brightest spot
+      ctx.fillStyle = '#689850';
+      ctx.beginPath();
+      ctx.arc(sx + 12, sy + 9, 4, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 }
 
 // ── DRAW: PLAYER ──────────────────────────────────────────────
 function drawPlayer() {
-  const camX = player.px - canvas.width / 2 + TILE / 2;
-  const camY = player.py - canvas.height / 2 + TILE / 2;
-  const sx = player.px - camX;
-  const sy = player.py - camY;
-  const bob = Math.sin(time * 8) * (player.moving ? 1.5 : 0);
+  let camX = player.px - canvas.width / 2 + TILE / 2;
+  let camY = player.py - canvas.height / 2 + TILE / 2;
+  camX = Math.max(0, Math.min(MAP_W * TILE - canvas.width, camX));
+  camY = Math.max(0, Math.min(MAP_H * TILE - canvas.height, camY));
+  const sx = Math.round(player.px - camX);
+  const sy = Math.round(player.py - camY);
+
+  // Walk cycle
+  const wc = player.moving ? Math.sin(time * 10) : 0;
+  const l1 = Math.round(Math.max(0,  wc) * 4); // lead leg down-offset
+  const l2 = Math.round(Math.max(0, -wc) * 4); // trail leg down-offset
+  const arm = Math.round(wc * 2);               // arm swing
 
   // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
   ctx.beginPath();
-  ctx.ellipse(sx + 16, sy + 30, 8, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse(sx + 16, sy + 32, 8, 3, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Body (kimono)
-  ctx.fillStyle = '#4a6a8a';
-  ctx.fillRect(sx + 8, sy + 12 + bob, 16, 14);
-  // Kimono belt (obi)
-  ctx.fillStyle = C.uiBorder;
-  ctx.fillRect(sx + 8, sy + 19 + bob, 16, 3);
+  // Helper: pixel rect relative to sprite origin
+  const p = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(sx + x, sy + y, w, h); };
 
-  // Head
-  ctx.fillStyle = '#e8d0b0';
-  ctx.fillRect(sx + 10, sy + 4 + bob, 12, 10);
-  // Hair
-  ctx.fillStyle = '#1a1a2a';
-  ctx.fillRect(sx + 9, sy + 2 + bob, 14, 5);
-  ctx.fillRect(sx + 9, sy + 4 + bob, 2, 4);
-  ctx.fillRect(sx + 21, sy + 4 + bob, 2, 4);
+  const SKIN  = '#f0c880';
+  const CAP   = '#e8e8e0';
+  const BRIM  = '#d0d0c8';
+  const JAC   = '#3070a8'; // teal-blue jacket
+  const JAC2  = '#245890'; // jacket shadow
+  const SHIRT = '#f0f0e8'; // white undershirt
+  const BELT  = '#604828';
+  const PANT  = '#384060';
+  const PANT2 = '#283050';
+  const SHOE  = '#e8e8d8';
+  const HAIR  = '#1a1a28';
+  const PACK  = '#c03020'; // red backpack
+  const EYE   = '#201818';
 
-  // Eyes (direction-based)
-  ctx.fillStyle = '#1a1a2a';
-  if (player.dir === 0) { // down
-    ctx.fillRect(sx + 12, sy + 9 + bob, 2, 2);
-    ctx.fillRect(sx + 18, sy + 9 + bob, 2, 2);
-  } else if (player.dir === 3) { // up
-    // No eyes visible from behind
-  } else if (player.dir === 1) { // left
-    ctx.fillRect(sx + 11, sy + 9 + bob, 2, 2);
-    ctx.fillRect(sx + 16, sy + 9 + bob, 2, 2);
-  } else { // right
-    ctx.fillRect(sx + 14, sy + 9 + bob, 2, 2);
-    ctx.fillRect(sx + 19, sy + 9 + bob, 2, 2);
+  switch (player.dir) {
+    case 0: { // Facing DOWN — front view
+      // Legs + shoes (behind body)
+      p(11, 23 + l1, 5, 7, PANT);  p(10, 29 + l1, 6, 2, SHOE);
+      p(17, 23 + l2, 5, 7, PANT);  p(16, 29 + l2, 6, 2, SHOE);
+      // Body
+      p(9,  15, 14, 9, JAC);
+      p(13, 16, 6, 8, SHIRT);
+      p(9,  22, 14, 2, BELT);
+      // Arms + hands
+      p(6,  16, 3, 8 - arm, JAC2);   p(6,  23 - arm, 3, 3, SKIN);
+      p(23, 16, 3, 8 + arm, JAC2);   p(23, 23 + arm, 3, 3, SKIN);
+      // Neck
+      p(14, 13, 4, 3, SKIN);
+      // Face
+      p(11,  5, 10, 9, SKIN);
+      // Cap
+      p(10,  2, 12, 6, CAP);
+      p(9,   7, 14, 2, BRIM);
+      // Hair below brim
+      p(10,  8,  12, 3, HAIR);
+      // Eyes
+      p(13, 10,  2, 2, EYE);
+      p(18, 10,  2, 2, EYE);
+      break;
+    }
+    case 3: { // Facing UP — back view
+      // Legs + shoes (behind body)
+      p(11, 23 + l1, 5, 7, PANT);  p(10, 29 + l1, 6, 2, SHOE);
+      p(17, 23 + l2, 5, 7, PANT);  p(16, 29 + l2, 6, 2, SHOE);
+      // Body (back) — show backpack
+      p(9,  15, 14, 9, JAC);
+      p(11, 16, 10, 7, PACK);
+      p(12, 17,  8, 5, '#a02818');
+      p(9,  22, 14, 2, BELT);
+      // Arms
+      p(6,  16, 3, 8 + arm, JAC2);
+      p(23, 16, 3, 8 - arm, JAC2);
+      // Back of head + cap
+      p(11,  5, 10, 9, SKIN);
+      p(10,  2, 12, 6, CAP);
+      p(10,  7, 12, 4, HAIR);  // hair peeking below cap
+      break;
+    }
+    case 1: // Facing LEFT — flip the right-facing sprite
+    case 2: { // Facing RIGHT — side view
+      const facingRight = player.dir === 2;
+      if (!facingRight) {
+        ctx.save();
+        ctx.translate(sx + 16, 0);
+        ctx.scale(-1, 1);
+        ctx.translate(-(sx + 16), 0);
+      }
+      // Back leg (further)
+      p(12, 23 + l2, 4, 7, PANT2);  p(11, 29 + l2, 5, 2, '#c8c8b8');
+      // Body
+      p(10, 15, 12, 9, JAC);
+      p(16, 16,  5, 8, SHIRT);  // visible front shirt
+      p(10, 22, 12, 2, BELT);
+      // Back arm (behind body)
+      p(8,  16, 3, 8 + arm, JAC2);
+      // Front leg (closer)
+      p(14, 23 + l1, 5, 7, PANT);   p(13, 29 + l1, 7, 2, SHOE);
+      // Front arm
+      p(20, 16, 3, 8 - arm, JAC);   p(20, 23 - arm, 3, 3, SKIN);
+      // Back hand
+      p(8,  23 + arm, 3, 3, SKIN);
+      // Neck + face (profile)
+      p(15, 13, 4, 3, SKIN);
+      p(13,  5, 9, 9, SKIN);
+      // Ear
+      p(13,  9, 2, 3, '#d8a870');
+      // Cap (profile — brim extends right)
+      p(11,  3, 11, 6, CAP);
+      p(19,  7,  5, 2, BRIM);   // brim tip
+      // Hair
+      p(12,  7, 8, 4, HAIR);
+      // Eye (single, profile)
+      p(19,  9, 2, 2, EYE);
+      if (!facingRight) ctx.restore();
+      break;
+    }
   }
-
-  // Legs
-  const legAnim = player.moving ? Math.sin(time * 12) * 2 : 0;
-  ctx.fillStyle = '#3a3a50';
-  ctx.fillRect(sx + 10, sy + 26 + bob, 4, 5);
-  ctx.fillRect(sx + 18, sy + 26 + bob + legAnim, 4, 5);
-
-  // Knife on belt
-  ctx.fillStyle = '#c0c0c8';
-  ctx.fillRect(sx + 24, sy + 18 + bob, 2, 8);
-  ctx.fillStyle = '#8a6a40';
-  ctx.fillRect(sx + 24, sy + 22 + bob, 2, 4);
 }
 
 // ── DRAW: HUD ─────────────────────────────────────────────────
@@ -816,10 +982,10 @@ function drawHUD() {
   // Location indicator
   if (isEncounterTile(player.x, player.y)) {
     const pulse = 0.5 + 0.3 * Math.sin(time * 4);
-    ctx.fillStyle = `rgba(100,200,80,${pulse})`;
+    ctx.fillStyle = `rgba(120,220,90,${pulse})`;
     ctx.font = '10px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('~ Bamboo Grove ~', canvas.width / 2, canvas.height - 12);
+    ctx.fillText('! Tall Grass — watch your step !', canvas.width / 2, canvas.height - 12);
   }
 }
 
