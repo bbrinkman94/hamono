@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>HAMONO 刃物 — v0.2</title>
+  <title>HAMONO 刃物 — v0.3</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0a0a0f; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
@@ -13,7 +13,7 @@
   <canvas id="game"></canvas>
   <script>
 // ══════════════════════════════════════════════════════════════
-// HAMONO 刃物 v0.2 — Knife Encounter System
+// HAMONO 刃物 v0.3 — Gen 4 Visual Overhaul
 // ══════════════════════════════════════════════════════════════
 
 const canvas = document.getElementById('game');
@@ -136,29 +136,31 @@ function stopEncounterDrone() {
 
 // ── COLORS ────────────────────────────────────────────────────
 const C = {
-  bg: '#101808',
-  // Grass
-  grass: '#78c050',
-  grassLight: '#88c858',
-  // Tall grass
-  tallGrass: '#58a030',
-  tallGrassLight: '#68b038',
-  tallGrassBlade: '#386820',
-  tallGrassTip: '#50902a',
-  // Path
-  path: '#d8b870',
-  pathLight: '#c8a860',
-  pathShadow: '#b09850',
-  // Water
-  water: '#2050d0',
-  waterLight: '#3870e8',
-  waterFoam: '#90b8f8',
-  // Tree
-  tree: '#386828',
-  treeLight: '#50882a',
-  treeShadow: '#284818',
-  treeTrunk: '#886030',
-  treeTrunkShadow: '#705020',
+  bg: '#305828',         // dark forest border fill
+  // Grass — Gen 4 bright teal-green
+  grass: '#68B448',
+  grassLight: '#78C458',
+  grassDiag: '#88D468',  // lighter diagonal texture layer
+  // Tall grass — slightly more saturated/dark
+  tallGrass: '#4A9438',
+  tallGrassLight: '#5AA448',
+  tallGrassBlade: '#2E6820',
+  tallGrassTip: '#428830',
+  // Path — Gen 4 light sage/mint (not sandy)
+  path: '#A0CE88',
+  pathLight: '#B0DE98',
+  pathShadow: '#80B068',
+  // Water — Gen 4 sky blue
+  water: '#68A8F0',
+  waterLight: '#88C0F8',
+  waterFoam: '#B8D8FF',
+  // Tree — deeper greens, round puffy canopies
+  tree: '#308028',
+  treeLight: '#50A040',
+  treeMid: '#408030',
+  treeShadow: '#185018',
+  treeTrunk: '#806840',
+  treeTrunkShadow: '#604830',
   // Buildings
   building: '#f0e0b0',
   buildingDark: '#c8b880',
@@ -673,50 +675,68 @@ function drawMap() {
 
       switch (tile) {
         case 9: // Tree — draw grass base first
-        case 0: { // Grass
+        case 0: { // Grass — Gen 4 diagonal cross-hatch texture
           ctx.fillStyle = (tx + ty) % 2 === 0 ? C.grass : C.grassLight;
           ctx.fillRect(sx, sy, TILE, TILE);
-          // Occasional flower dot
-          if (seed % 11 === 0) {
-            ctx.fillStyle = '#f8f040';
-            ctx.fillRect(sx + (seed % 18) + 4, sy + (seed % 16) + 4, 2, 2);
+          // Gen 4 diagonal checker texture — 4x4 blocks alternating lighter
+          for (let dy = 0; dy < TILE; dy += 4) {
+            for (let dx = 0; dx < TILE; dx += 4) {
+              if ((Math.floor(dx / 4) + Math.floor(dy / 4)) % 2 === 0) {
+                ctx.fillStyle = 'rgba(140,210,90,0.22)';
+                ctx.fillRect(sx + dx, sy + dy, 4, 4);
+              }
+            }
           }
-          // Subtle blade detail
-          if (seed % 7 === 0) {
-            ctx.fillStyle = '#609838';
-            ctx.fillRect(sx + (seed % 20) + 2, sy + 10, 1, 6);
-            ctx.fillRect(sx + (seed % 16) + 12, sy + 8, 1, 7);
+          // Small cross-shaped detail grass clumps
+          if (seed % 9 === 0) {
+            ctx.fillStyle = '#50A030';
+            const gx = sx + (seed % 22) + 3;
+            const gy = sy + (seed % 18) + 4;
+            ctx.fillRect(gx, gy + 1, 5, 3); // horizontal
+            ctx.fillRect(gx + 2, gy, 1, 5); // vertical
+          }
+          // Small yellow flower
+          if (seed % 19 === 0) {
+            ctx.fillStyle = '#F0F040';
+            ctx.fillRect(sx + (seed % 24) + 2, sy + (seed % 20) + 2, 2, 2);
           }
           break;
         }
-        case 1: { // Dirt path — GBA sandy style
+        case 1: { // Path — Gen 4 light sage/mint style
           ctx.fillStyle = (tx + ty) % 2 === 0 ? C.path : C.pathLight;
           ctx.fillRect(sx, sy, TILE, TILE);
-          // Pebble detail
-          if (seed % 9 === 0) {
-            ctx.fillStyle = C.pathShadow;
-            ctx.fillRect(sx + (seed % 22) + 2, sy + (seed % 20) + 2, 3, 2);
+          // Fine diagonal checker (lighter, smaller) for path texture
+          for (let dy = 0; dy < TILE; dy += 4) {
+            for (let dx = 0; dx < TILE; dx += 4) {
+              if ((Math.floor(dx / 4) + Math.floor(dy / 4)) % 2 === 0) {
+                ctx.fillStyle = 'rgba(180,240,140,0.18)';
+                ctx.fillRect(sx + dx, sy + dy, 4, 4);
+              }
+            }
           }
-          // Subtle edge shading to suggest depth vs. grass
-          ctx.fillStyle = 'rgba(0,0,0,0.06)';
+          // Subtle inner shadow at top/left edges (depth vs. grass)
+          ctx.fillStyle = 'rgba(0,0,0,0.07)';
           ctx.fillRect(sx, sy, TILE, 1);
           ctx.fillRect(sx, sy, 1, TILE);
           break;
         }
-        case 2: { // Water — GBA Pokemon-style
-          const wA = Math.sin(time * 2.5 + tx * 0.9 + ty * 0.5);
+        case 2: { // Water — Gen 4 sky blue
+          const wA = Math.sin(time * 2.0 + tx * 0.8 + ty * 0.5);
           ctx.fillStyle = C.water;
           ctx.fillRect(sx, sy, TILE, TILE);
-          // Animated wave highlights
+          // Horizontal wave stripes
           ctx.fillStyle = C.waterLight;
           const wOff = Math.round(wA * 2);
-          ctx.fillRect(sx, sy + 7 + wOff, TILE, 3);
-          ctx.fillRect(sx, sy + 21 - wOff, TILE, 2);
-          // Foam sparkle
-          if (wA > 0.65) {
+          ctx.fillRect(sx, sy + 5  + wOff, TILE, 4);
+          ctx.fillRect(sx, sy + 19 - wOff, TILE, 3);
+          // Sparkle foam dots
+          if (wA > 0.5) {
             ctx.fillStyle = C.waterFoam;
-            ctx.fillRect(sx + (seed % 22) + 2, sy + (seed % 20) + 2, 3, 1);
+            ctx.fillRect(sx + (seed % 20) + 2, sy + (seed % 18) + 3, 4, 2);
           }
+          // Slightly darker near bottom edge (depth)
+          ctx.fillStyle = 'rgba(40,80,160,0.12)';
+          ctx.fillRect(sx, sy + 28, TILE, 4);
           break;
         }
         case 3: { // Building wall — cream/beige GBA style
@@ -773,22 +793,42 @@ function drawMap() {
           ctx.fillRect(sx - 8, sy - 8, TILE + 16, TILE + 16);
           break;
         }
-        case 5: { // Tall grass — Pokemon Emerald encounter style
-          // Base — slightly darker green than normal grass
+        case 5: { // Tall grass — Gen 4 clumpy style
+          // Base — same diagonal texture as normal grass but darker tint
           ctx.fillStyle = (tx + ty) % 2 === 0 ? C.tallGrass : C.tallGrassLight;
           ctx.fillRect(sx, sy, TILE, TILE);
-          // Grass blades — tall, sticking up from top half
-          const blade = (off) => Math.round(Math.sin(time * 1.8 + tx * 0.7 + off) * 1.5);
-          // Left blade
+          // Same diagonal texture as normal grass
+          for (let dy = 0; dy < TILE; dy += 4) {
+            for (let dx = 0; dx < TILE; dx += 4) {
+              if ((Math.floor(dx / 4) + Math.floor(dy / 4)) % 2 === 0) {
+                ctx.fillStyle = 'rgba(100,180,60,0.20)';
+                ctx.fillRect(sx + dx, sy + dy, 4, 4);
+              }
+            }
+          }
+          // Gen 4 style — rounded clumps of blades in groups of 3 per tile
+          const sway = (off) => Math.round(Math.sin(time * 1.6 + tx * 0.9 + off) * 1.5);
+          // Clump 1 (left)
+          const c1x = sx + (seed % 5) + 2;
           ctx.fillStyle = C.tallGrassBlade;
-          ctx.fillRect(sx + (seed % 6) + 3  + blade(0), sy, 2, 18);
-          ctx.fillRect(sx + (seed % 8) + 12 + blade(1), sy + 2, 2, 16);
-          ctx.fillRect(sx + (seed % 6) + 20 + blade(2), sy + 1, 2, 17);
-          // Lighter tips
+          ctx.fillRect(c1x + sway(0),     sy + 8, 3, 16);
+          ctx.fillRect(c1x + 4 + sway(1), sy + 6, 3, 18);
           ctx.fillStyle = C.tallGrassTip;
-          ctx.fillRect(sx + (seed % 6) + 3  + blade(0), sy, 2, 6);
-          ctx.fillRect(sx + (seed % 8) + 12 + blade(1), sy + 2, 2, 5);
-          ctx.fillRect(sx + (seed % 6) + 20 + blade(2), sy + 1, 2, 6);
+          // Rounded tip — 3 pixels wide tapering
+          ctx.fillRect(c1x + sway(0),     sy + 2, 3, 8);
+          ctx.fillRect(c1x + 1 + sway(0), sy,     1, 3);
+          ctx.fillRect(c1x + 4 + sway(1), sy + 1, 3, 7);
+          ctx.fillRect(c1x + 5 + sway(1), sy - 1, 1, 3);
+          // Clump 2 (right)
+          const c2x = sx + (seed % 6) + 18;
+          ctx.fillStyle = C.tallGrassBlade;
+          ctx.fillRect(c2x + sway(2),     sy + 7, 3, 17);
+          ctx.fillRect(c2x + 4 + sway(3), sy + 9, 3, 15);
+          ctx.fillStyle = C.tallGrassTip;
+          ctx.fillRect(c2x + sway(2),     sy + 1, 3, 8);
+          ctx.fillRect(c2x + 1 + sway(2), sy - 1, 1, 3);
+          ctx.fillRect(c2x + 4 + sway(3), sy + 3, 3, 8);
+          ctx.fillRect(c2x + 5 + sway(3), sy + 1, 1, 3);
           break;
         }
       }
@@ -803,35 +843,40 @@ function drawMap() {
       const sy = Math.round(ty * TILE - camY);
       if (sx < -TILE || sy < -TILE || sx > canvas.width + TILE || sy > canvas.height + TILE) continue;
 
-      // Ground shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      // Ground shadow ellipse
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
       ctx.beginPath();
-      ctx.ellipse(sx + 17, sy + 27, 12, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(sx + 16, sy + 28, 13, 5, 0, 0, Math.PI * 2);
       ctx.fill();
       // Trunk
       ctx.fillStyle = C.treeTrunk;
-      ctx.fillRect(sx + 12, sy + 18, 8, 11);
+      ctx.fillRect(sx + 12, sy + 20, 8, 10);
       ctx.fillStyle = C.treeTrunkShadow;
-      ctx.fillRect(sx + 13, sy + 19, 3, 10);
-      // Canopy — shadow ring
+      ctx.fillRect(sx + 12, sy + 20, 3, 10);
+      // Canopy — deep shadow base (largest, offset down-right)
       ctx.fillStyle = C.treeShadow;
       ctx.beginPath();
-      ctx.arc(sx + 16, sy + 13, 14, 0, Math.PI * 2);
+      ctx.arc(sx + 17, sy + 14, 15, 0, Math.PI * 2);
       ctx.fill();
-      // Canopy — main
+      // Canopy — dark main body
       ctx.fillStyle = C.tree;
       ctx.beginPath();
-      ctx.arc(sx + 16, sy + 13, 12, 0, Math.PI * 2);
+      ctx.arc(sx + 15, sy + 13, 14, 0, Math.PI * 2);
       ctx.fill();
-      // Canopy — highlight
+      // Canopy — mid secondary sphere (upper-left)
+      ctx.fillStyle = C.treeMid;
+      ctx.beginPath();
+      ctx.arc(sx + 11, sy + 10, 9, 0, Math.PI * 2);
+      ctx.fill();
+      // Canopy — bright highlight sphere
       ctx.fillStyle = C.treeLight;
       ctx.beginPath();
-      ctx.arc(sx + 13, sy + 10, 7, 0, Math.PI * 2);
+      ctx.arc(sx + 12, sy + 9, 7, 0, Math.PI * 2);
       ctx.fill();
-      // Canopy — brightest spot
-      ctx.fillStyle = '#689850';
+      // Specular highlight (tiny bright spot)
+      ctx.fillStyle = '#78C848';
       ctx.beginPath();
-      ctx.arc(sx + 12, sy + 9, 4, 0, Math.PI * 2);
+      ctx.arc(sx + 11, sy + 8, 3, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -861,66 +906,99 @@ function drawPlayer() {
   // Helper: pixel rect relative to sprite origin
   const p = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(sx + x, sy + y, w, h); };
 
-  const SKIN  = '#f0c880';
-  const CAP   = '#e8e8e0';
-  const BRIM  = '#d0d0c8';
-  const JAC   = '#3070a8'; // teal-blue jacket
-  const JAC2  = '#245890'; // jacket shadow
-  const SHIRT = '#f0f0e8'; // white undershirt
-  const BELT  = '#604828';
-  const PANT  = '#384060';
-  const PANT2 = '#283050';
-  const SHOE  = '#e8e8d8';
-  const HAIR  = '#1a1a28';
-  const PACK  = '#c03020'; // red backpack
-  const EYE   = '#201818';
+  // ── Gen 4 Lucas palette ──────────────────────────────────
+  const SKIN  = '#F0C890';
+  const CAP   = '#F4F4EC';  // white cap body
+  const CAP2  = '#DCDCD4';  // cap shadow underside
+  const BRIM  = '#3CAAA0';  // teal brim (characteristic Gen 4 cap)
+  const BRIM2 = '#2A8880';  // brim shadow
+  const POM   = '#FFFFFF';  // white pom-pom on top
+  const HAIR  = '#247070';  // dark teal hair (Lucas's signature)
+  const JAC   = '#2A3C68';  // dark navy jacket
+  const JAC2  = '#1C2A4C';  // jacket shadow/crease
+  const STRAP = '#C82820';  // diagonal red bag strap
+  const STRAP2= '#A01C10';  // strap shadow
+  const SHIRT = '#F0F0E8';  // white undershirt
+  const BELT  = '#484030';
+  const PANT  = '#506880';  // slate gray-blue pants (Gen 4 style)
+  const PANT2 = '#384860';  // pant shadow
+  const SHOE  = '#C82020';  // red shoes
+  const SHOE2 = '#F0F0E0';  // white shoe sole/detail
+  const PACK  = '#C83020';  // red backpack
+  const EYE   = '#201820';
 
   switch (player.dir) {
-    case 0: { // Facing DOWN — front view
-      // Legs + shoes (behind body)
-      p(11, 23 + l1, 5, 7, PANT);  p(10, 29 + l1, 6, 2, SHOE);
-      p(17, 23 + l2, 5, 7, PANT);  p(16, 29 + l2, 6, 2, SHOE);
-      // Body
+    case 0: { // Facing DOWN — front view (Gen 4 Lucas)
+      // Legs
+      p(11, 23 + l1, 5, 7, PANT);   p(10, 29 + l1, 6, 2, SHOE);
+      p(11, 30 + l1, 3, 1, SHOE2);  // shoe sole detail
+      p(17, 23 + l2, 5, 7, PANT);   p(16, 29 + l2, 6, 2, SHOE);
+      p(17, 30 + l2, 3, 1, SHOE2);
+      // Body — navy jacket
       p(9,  15, 14, 9, JAC);
-      p(13, 16, 6, 8, SHIRT);
+      p(13, 16,  6, 8, SHIRT);
       p(9,  22, 14, 2, BELT);
+      // Diagonal bag strap — signature Gen 4 detail (top-right to bottom-left)
+      p(20, 15, 3, 3, STRAP);
+      p(18, 17, 3, 2, STRAP);
+      p(16, 18, 3, 2, STRAP);
+      p(14, 19, 3, 2, STRAP);
+      p(12, 20, 3, 2, STRAP2);
       // Arms + hands
-      p(6,  16, 3, 8 - arm, JAC2);   p(6,  23 - arm, 3, 3, SKIN);
-      p(23, 16, 3, 8 + arm, JAC2);   p(23, 23 + arm, 3, 3, SKIN);
+      p(6,  16, 3, 8 - arm, JAC2);  p(6,  23 - arm, 3, 3, SKIN);
+      p(23, 16, 3, 8 + arm, JAC2);  p(23, 23 + arm, 3, 3, SKIN);
       // Neck
       p(14, 13, 4, 3, SKIN);
       // Face
       p(11,  5, 10, 9, SKIN);
-      // Cap
+      // Pom-pom (white ball on top of cap)
+      p(14,  0, 4, 4, POM);
+      p(13,  1, 6, 2, POM);
+      // Cap body
       p(10,  2, 12, 6, CAP);
-      p(9,   7, 14, 2, BRIM);
-      // Hair below brim
-      p(10,  8,  12, 3, HAIR);
+      p(11,  3, 10, 4, CAP2);
+      // Teal brim
+      p(8,   7, 16, 2, BRIM);
+      p(8,   8, 16, 1, BRIM2);
+      // Dark teal hair below brim
+      p(10,  8, 12, 4, HAIR);
       // Eyes
       p(13, 10,  2, 2, EYE);
       p(18, 10,  2, 2, EYE);
       break;
     }
-    case 3: { // Facing UP — back view
-      // Legs + shoes (behind body)
-      p(11, 23 + l1, 5, 7, PANT);  p(10, 29 + l1, 6, 2, SHOE);
-      p(17, 23 + l2, 5, 7, PANT);  p(16, 29 + l2, 6, 2, SHOE);
-      // Body (back) — show backpack
+    case 3: { // Facing UP — back view (Gen 4 Lucas)
+      // Legs
+      p(11, 23 + l1, 5, 7, PANT);   p(10, 29 + l1, 6, 2, SHOE);
+      p(17, 23 + l2, 5, 7, PANT);   p(16, 29 + l2, 6, 2, SHOE);
+      // Body (back) — red backpack
       p(9,  15, 14, 9, JAC);
-      p(11, 16, 10, 7, PACK);
-      p(12, 17,  8, 5, '#a02818');
+      p(11, 15, 10, 8, PACK);
+      p(12, 16,  8, 6, '#A02018');
+      // Backpack strap details
+      p(10, 16, 2, 7, STRAP2);
+      p(20, 16, 2, 7, STRAP2);
       p(9,  22, 14, 2, BELT);
       // Arms
       p(6,  16, 3, 8 + arm, JAC2);
       p(23, 16, 3, 8 - arm, JAC2);
-      // Back of head + cap
+      // Back of head
       p(11,  5, 10, 9, SKIN);
+      // Pom-pom
+      p(14,  0, 4, 4, POM);
+      p(13,  1, 6, 2, POM);
+      // Cap back
       p(10,  2, 12, 6, CAP);
-      p(10,  7, 12, 4, HAIR);  // hair peeking below cap
+      p(11,  3, 10, 4, CAP2);
+      // Teal brim (back — smaller)
+      p(9,   7, 14, 2, BRIM);
+      p(9,   8, 14, 1, BRIM2);
+      // Dark teal hair visible below cap
+      p(10,  8, 12, 5, HAIR);
       break;
     }
     case 1: // Facing LEFT — flip the right-facing sprite
-    case 2: { // Facing RIGHT — side view
+    case 2: { // Facing RIGHT — side view (Gen 4 Lucas)
       const facingRight = player.dir === 2;
       if (!facingRight) {
         ctx.save();
@@ -929,29 +1007,41 @@ function drawPlayer() {
         ctx.translate(-(sx + 16), 0);
       }
       // Back leg (further)
-      p(12, 23 + l2, 4, 7, PANT2);  p(11, 29 + l2, 5, 2, '#c8c8b8');
-      // Body
+      p(13, 23 + l2, 4, 7, PANT2);  p(12, 29 + l2, 5, 2, '#904040');
+      // Body — navy jacket
       p(10, 15, 12, 9, JAC);
-      p(16, 16,  5, 8, SHIRT);  // visible front shirt
+      p(16, 16,  5, 8, SHIRT);
       p(10, 22, 12, 2, BELT);
+      // Diagonal strap visible on side
+      p(16, 15, 2, 2, STRAP);
+      p(15, 17, 2, 2, STRAP);
+      p(14, 19, 2, 2, STRAP2);
       // Back arm (behind body)
       p(8,  16, 3, 8 + arm, JAC2);
-      // Front leg (closer)
-      p(14, 23 + l1, 5, 7, PANT);   p(13, 29 + l1, 7, 2, SHOE);
-      // Front arm
-      p(20, 16, 3, 8 - arm, JAC);   p(20, 23 - arm, 3, 3, SKIN);
-      // Back hand
       p(8,  23 + arm, 3, 3, SKIN);
+      // Front leg (closer)
+      p(14, 23 + l1, 5, 7, PANT);
+      p(13, 29 + l1, 7, 2, SHOE);
+      p(13, 30 + l1, 4, 1, SHOE2);
+      // Front arm
+      p(20, 16, 3, 8 - arm, JAC);
+      p(20, 23 - arm, 3, 3, SKIN);
       // Neck + face (profile)
       p(15, 13, 4, 3, SKIN);
       p(13,  5, 9, 9, SKIN);
       // Ear
-      p(13,  9, 2, 3, '#d8a870');
-      // Cap (profile — brim extends right)
-      p(11,  3, 11, 6, CAP);
-      p(19,  7,  5, 2, BRIM);   // brim tip
-      // Hair
-      p(12,  7, 8, 4, HAIR);
+      p(13,  9, 2, 3, '#D8A870');
+      // Pom-pom (side view — circle on top)
+      p(15,  0, 4, 4, POM);
+      p(14,  1, 6, 2, POM);
+      // Cap side profile — brim extends forward (right)
+      p(11,  2, 11, 6, CAP);
+      p(11,  3, 10, 4, CAP2);
+      // Teal brim tip
+      p(20,  7,  4, 2, BRIM);
+      p(20,  8,  4, 1, BRIM2);
+      // Dark teal hair below cap (profile)
+      p(12,  7, 7, 5, HAIR);
       // Eye (single, profile)
       p(19,  9, 2, 2, EYE);
       if (!facingRight) ctx.restore();
