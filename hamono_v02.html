@@ -235,6 +235,30 @@ const MOVE_DURATION = 0.15; // seconds per tile
 // Collection
 const collection = [];
 
+// ── SAVE / LOAD ────────────────────────────────────────────────
+const SAVE_KEY = 'hamono_v02_save';
+
+function saveGame() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ collection }));
+  } catch(e) {}
+}
+
+function loadGame() {
+  try {
+    const data = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (data && Array.isArray(data.collection)) {
+      collection.push(...data.collection);
+    }
+  } catch(e) {}
+}
+
+function uniqueCount() {
+  return new Set(collection.map(k => k.name)).size;
+}
+
+loadGame();
+
 // Encounter state
 let currentKnife = null;
 let encounterTransitionTimer = 0;
@@ -551,6 +575,7 @@ function updateForge(dt) {
         // Caught!
         catchSuccess = true;
         collection.push(currentKnife);
+        saveGame();
         gameState = 'catch_result';
         catchResultTimer = 0;
         SFX.catch();
@@ -594,14 +619,12 @@ function updateCollection(dt) {
     SFX.menuSelect();
     return;
   }
-  if (collection.length === 0) return;
-
   if (justPressed('ArrowUp') || justPressed('KeyW')) {
     collectionSelected = Math.max(0, collectionSelected - 1);
     SFX.menuMove();
   }
   if (justPressed('ArrowDown') || justPressed('KeyS')) {
-    collectionSelected = Math.min(collection.length - 1, collectionSelected + 1);
+    collectionSelected = Math.min(KNIVES.length - 1, collectionSelected + 1);
     SFX.menuMove();
   }
 }
@@ -774,14 +797,15 @@ function drawPlayer() {
 // ── DRAW: HUD ─────────────────────────────────────────────────
 function drawHUD() {
   // Collection count
+  const unique = uniqueCount();
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(8, 8, 120, 28);
+  ctx.fillRect(8, 8, 148, 28);
   ctx.strokeStyle = C.uiBorder;
-  ctx.strokeRect(8, 8, 120, 28);
-  ctx.fillStyle = C.text;
+  ctx.strokeRect(8, 8, 148, 28);
+  ctx.fillStyle = unique === KNIVES.length ? C.uiBorder : C.text;
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`刃物 × ${collection.length}`, 16, 26);
+  ctx.fillText(`刃物  ${unique} / ${KNIVES.length}`, 16, 26);
 
   // Controls hint
   ctx.fillStyle = C.textDim;
@@ -1160,7 +1184,7 @@ function drawCatchResult() {
 
     ctx.fillStyle = rarityData.color;
     ctx.font = '13px monospace';
-    ctx.fillText(`Added to collection (${collection.length} total)`, 400, 375);
+    ctx.fillText(`${uniqueCount()} / ${KNIVES.length} types discovered`, 400, 375);
   } else {
     ctx.fillStyle = '#aa6644';
     ctx.font = 'bold 22px monospace';
@@ -1201,112 +1225,142 @@ function drawCollection() {
   ctx.fillText('刃物 Collection', 400, 55);
   ctx.shadowBlur = 0;
 
-  ctx.fillStyle = C.textDim;
+  const unique = uniqueCount();
+  ctx.fillStyle = unique === KNIVES.length ? C.uiBorder : C.textDim;
   ctx.font = '11px monospace';
-  ctx.fillText(`${collection.length} / ${KNIVES.length} types discovered`, 400, 75);
+  ctx.fillText(`${unique} / ${KNIVES.length} types discovered`, 400, 75);
 
-  if (collection.length === 0) {
-    ctx.fillStyle = C.textDim;
-    ctx.font = '13px monospace';
-    ctx.fillText('No knives yet. Walk through the bamboo groves!', 400, 300);
-  } else {
-    // List
-    const listX = 40, listY = 100, listW = 300, itemH = 32;
-    const maxVisible = 14;
-    const scrollOffset = Math.max(0, collectionSelected - maxVisible + 3);
+  // Build discovered lookup: knife name → best caught instance
+  const discovered = {};
+  for (const k of collection) {
+    if (!discovered[k.name]) discovered[k.name] = k;
+  }
 
-    for (let i = scrollOffset; i < Math.min(collection.length, scrollOffset + maxVisible); i++) {
-      const k = collection[i];
-      const iy = listY + (i - scrollOffset) * itemH;
-      const selected = i === collectionSelected;
-      const rarityData = RARITY[k.rarity];
+  // List — iterate over master KNIVES list
+  const listX = 40, listY = 100, listW = 300, itemH = 28;
+  const maxVisible = 14;
+  const scrollOffset = Math.max(0, collectionSelected - maxVisible + 3);
 
-      if (selected) {
-        ctx.fillStyle = 'rgba(200,160,80,0.1)';
-        ctx.fillRect(listX, iy, listW, itemH - 2);
-        ctx.strokeStyle = C.uiBorder + '60';
-        ctx.strokeRect(listX, iy, listW, itemH - 2);
-      }
+  for (let i = scrollOffset; i < Math.min(KNIVES.length, scrollOffset + maxVisible); i++) {
+    const template = KNIVES[i];
+    const found = discovered[template.name];
+    const iy = listY + (i - scrollOffset) * itemH;
+    const selected = i === collectionSelected;
+    const rarityData = RARITY[template.rarity];
 
-      // Rarity dot
-      ctx.fillStyle = rarityData.color;
-      ctx.beginPath();
-      ctx.arc(listX + 12, iy + 14, 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Name
-      ctx.fillStyle = selected ? C.text : C.textDim;
-      ctx.font = selected ? 'bold 12px monospace' : '12px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`${k.name} ${k.kanji}`, listX + 24, iy + 18);
-
-      // Rarity
-      ctx.fillStyle = rarityData.color;
-      ctx.font = '9px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(rarityData.name, listX + listW - 8, iy + 18);
+    if (selected) {
+      ctx.fillStyle = found ? 'rgba(200,160,80,0.12)' : 'rgba(80,80,100,0.12)';
+      ctx.fillRect(listX, iy, listW, itemH - 2);
+      ctx.strokeStyle = found ? C.uiBorder + '60' : '#404060';
+      ctx.strokeRect(listX, iy, listW, itemH - 2);
     }
 
-    // Detail panel for selected
-    if (collection[collectionSelected]) {
-      const k = collection[collectionSelected];
-      const rarityData = RARITY[k.rarity];
-      const panelX = 380, panelY = 100, panelW = 380, panelH = 360;
+    // Entry number
+    ctx.fillStyle = found ? rarityData.color : '#404060';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(String(i + 1).padStart(2, '0'), listX + 4, iy + 17);
 
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
-      ctx.fillRect(panelX, panelY, panelW, panelH);
-      ctx.strokeStyle = C.uiBorder + '30';
-      ctx.strokeRect(panelX, panelY, panelW, panelH);
+    // Rarity dot
+    ctx.fillStyle = found ? rarityData.color : '#303050';
+    ctx.beginPath();
+    ctx.arc(listX + 28, iy + 13, 4, 0, Math.PI * 2);
+    ctx.fill();
 
-      // Knife art
-      drawKnifeArt(panelX + panelW / 2, panelY + 80, k, 2.5);
-
-      // Info
-      ctx.textAlign = 'center';
-      const cx = panelX + panelW / 2;
-
-      ctx.fillStyle = C.text;
-      ctx.font = 'bold 18px monospace';
-      ctx.fillText(k.name, cx, panelY + 150);
-
+    // Name
+    if (found) {
+      ctx.fillStyle = selected ? C.text : C.textDim;
+      ctx.font = selected ? 'bold 11px monospace' : '11px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${template.name}  ${template.kanji}`, listX + 38, iy + 17);
       ctx.fillStyle = rarityData.color;
-      ctx.font = '14px monospace';
-      ctx.fillText(k.kanji, cx, panelY + 172);
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(rarityData.name, listX + listW - 8, iy + 17);
+    } else {
+      ctx.fillStyle = selected ? '#505070' : '#303050';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('??? ·····', listX + 38, iy + 17);
+    }
+  }
 
-      ctx.font = '10px monospace';
-      ctx.fillText(`${rarityData.name} · ${k.type}`, cx, panelY + 192);
+  // Detail panel
+  const panelX = 380, panelY = 100, panelW = 380, panelH = 380;
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(panelX, panelY, panelW, panelH);
+  ctx.strokeStyle = C.uiBorder + '30';
+  ctx.strokeRect(panelX, panelY, panelW, panelH);
 
+  const selectedTemplate = KNIVES[collectionSelected];
+  const selectedFound = discovered[selectedTemplate?.name];
+  const panelCX = panelX + panelW / 2;
+
+  if (selectedFound) {
+    const rarityData = RARITY[selectedFound.rarity];
+    drawKnifeArt(panelCX, panelY + 80, selectedFound, 2.5);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = C.text;
+    ctx.font = 'bold 18px monospace';
+    ctx.fillText(selectedFound.name, panelCX, panelY + 152);
+
+    ctx.fillStyle = rarityData.color;
+    ctx.font = '14px monospace';
+    ctx.fillText(selectedFound.kanji, panelCX, panelY + 173);
+
+    ctx.font = '10px monospace';
+    ctx.fillText(`${rarityData.name} · ${selectedFound.type}`, panelCX, panelY + 193);
+
+    ctx.fillStyle = C.textDim;
+    ctx.font = '10px monospace';
+    ctx.fillText(selectedFound.desc, panelCX, panelY + 215);
+
+    const statNames = { sharp: 'Sharpness', edge: 'Edge Ret.', weight: 'Weight', balance: 'Balance' };
+    let sIdx = 0;
+    for (const [key, label] of Object.entries(statNames)) {
+      const val = selectedFound.stats[key];
+      const sy = panelY + 242 + sIdx * 28;
+      ctx.textAlign = 'left';
       ctx.fillStyle = C.textDim;
       ctx.font = '10px monospace';
-      ctx.fillText(k.desc, cx, panelY + 218);
-
-      // Stats bars
-      const statNames = { sharp: 'Sharpness', edge: 'Edge Ret.', weight: 'Weight', balance: 'Balance' };
-      let sIdx = 0;
-      for (const [key, label] of Object.entries(statNames)) {
-        const val = k.stats[key];
-        const sy = panelY + 245 + sIdx * 26;
-
-        ctx.textAlign = 'left';
-        ctx.fillStyle = C.textDim;
-        ctx.font = '10px monospace';
-        ctx.fillText(label, panelX + 40, sy + 4);
-
-        // Bar
-        const bx = panelX + 140, bw = 160;
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        ctx.fillRect(bx, sy - 4, bw, 10);
-        const barColor = val > 85 ? rarityData.color : val > 65 ? '#80a080' : '#707070';
-        ctx.fillStyle = barColor;
-        ctx.fillRect(bx, sy - 4, bw * (val / 100), 10);
-
-        ctx.textAlign = 'right';
-        ctx.fillStyle = C.text;
-        ctx.font = '10px monospace';
-        ctx.fillText(val, panelX + panelW - 40, sy + 4);
-        sIdx++;
-      }
+      ctx.fillText(label, panelX + 40, sy + 4);
+      const bx = panelX + 140, bw = 160;
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(bx, sy - 4, bw, 10);
+      const barColor = val > 85 ? rarityData.color : val > 65 ? '#80a080' : '#707070';
+      ctx.fillStyle = barColor;
+      ctx.fillRect(bx, sy - 4, bw * (val / 100), 10);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = C.text;
+      ctx.font = '10px monospace';
+      ctx.fillText(val, panelX + panelW - 40, sy + 4);
+      sIdx++;
     }
+
+    // How many of this type caught
+    const catchCount = collection.filter(k => k.name === selectedFound.name).length;
+    if (catchCount > 1) {
+      ctx.fillStyle = C.textDim;
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Forged ×${catchCount}`, panelCX, panelY + panelH - 14);
+    }
+  } else if (selectedTemplate) {
+    // Undiscovered
+    ctx.globalAlpha = 0.15;
+    drawKnifeArt(panelCX, panelY + 80, selectedTemplate, 2.5);
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#404060';
+    ctx.font = 'bold 18px monospace';
+    ctx.fillText('???', panelCX, panelY + 152);
+    ctx.font = '10px monospace';
+    ctx.fillText(`${RARITY[selectedTemplate.rarity].name} · ${selectedTemplate.type}`, panelCX, panelY + 175);
+    ctx.fillStyle = '#303050';
+    ctx.font = '10px monospace';
+    ctx.fillText('Not yet discovered', panelCX, panelY + 200);
+    ctx.fillText('Walk through the bamboo groves...', panelCX, panelY + 218);
   }
 
   // Controls
@@ -1347,10 +1401,22 @@ function drawTitle() {
   ctx.font = '10px monospace';
   ctx.fillText('Explore. Discover. Forge legendary Japanese knives.', canvas.width/2, cy + 68);
 
+  // Save progress
+  const savedCount = uniqueCount();
+  if (savedCount > 0) {
+    const allFound = savedCount === KNIVES.length;
+    ctx.fillStyle = allFound ? C.uiBorder : C.textDim;
+    ctx.font = '10px monospace';
+    ctx.fillText(
+      allFound ? `★ COMPLETE — All ${KNIVES.length} blades forged ★` : `Continue  ·  ${savedCount} / ${KNIVES.length} blades forged`,
+      canvas.width/2, cy + 86
+    );
+  }
+
   if (Math.floor(time * 2) % 2 === 0) {
     ctx.fillStyle = C.text;
     ctx.font = '11px monospace';
-    ctx.fillText('▶  PRESS ANY KEY TO BEGIN  ◀', canvas.width/2, cy + 100);
+    ctx.fillText('▶  PRESS ANY KEY TO BEGIN  ◀', canvas.width/2, cy + 108);
   }
 
   ctx.fillStyle = C.textDim;
